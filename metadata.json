@@ -1,0 +1,6 @@
+{
+  "name": "Sur la 2 - Chat & Communauté",
+  "description": "Application sociale et chat temps réel avec suivi d'humeur entre amis, mini-quizz interactifs, scores et récompenses.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
