@@ -20,9 +20,10 @@ interface HeaderProps {
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
   onOpenNewQuiz: () => void;
+  onOpenAuth: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onOpenNewQuiz }) => {
+export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onOpenNewQuiz, onOpenAuth }) => {
   const {
     currentUser,
     isSoundMuted,
@@ -169,6 +170,15 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onOpenN
             title="Basculez entre le mode Membre et Admin pour tester les fonctionnalités"
           >
             <span>{currentUser.role === 'admin' ? 'Admin' : 'Membre'}</span>
+          </button>
+
+          {/* Supabase Auth modal button */}
+          <button
+            onClick={onOpenAuth}
+            className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20 transition-colors"
+            title="Connexion ou Inscription avec Supabase Auth"
+          >
+            <span>Compte</span>
           </button>
 
           {/* Profile & Settings button */}

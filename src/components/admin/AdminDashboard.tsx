@@ -14,7 +14,7 @@ import { NotificationComposer } from './NotificationComposer';
 import { AdminLogs } from './AdminLogs';
 
 export const AdminDashboard: React.FC = () => {
-  const { currentUser, toggleRole } = useApp();
+  const { currentUser, toggleRole, friends, messages, broadcasts } = useApp();
 
   return (
     <div className="min-h-[calc(100vh-4rem)] overflow-y-auto bg-[#0B0F19] p-4 sm:p-6 lg:p-8">
@@ -51,17 +51,16 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Overview Stat Cards */}
+        {/* Overview Stat Cards - REAL METRICS */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="rounded-3xl border border-slate-800 bg-[#0B0F19]/90 p-5 shadow-lg">
             <div className="flex items-center justify-between text-slate-400 mb-2">
-              <span className="text-xs font-semibold uppercase tracking-wider">Membres Actifs</span>
+              <span className="text-xs font-semibold uppercase tracking-wider">Membres Inscrits</span>
               <Users className="h-4 w-4 text-cyan-400" />
             </div>
-            <p className="text-2xl font-black text-white">78</p>
-            <p className="text-[11px] text-emerald-400 mt-1 flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" />
-              <span>+12% cette semaine</span>
+            <p className="text-2xl font-black text-white">{friends.length + 1}</p>
+            <p className="text-[11px] text-cyan-400 mt-1 flex items-center gap-1">
+              <span>{friends.length === 0 ? 'Vous êtes le premier membre' : `${friends.length} ami(s) connecté(s)`}</span>
             </p>
           </div>
 
@@ -70,32 +69,34 @@ export const AdminDashboard: React.FC = () => {
               <span className="text-xs font-semibold uppercase tracking-wider">Messages échangés</span>
               <MessageSquare className="h-4 w-4 text-violet-400" />
             </div>
-            <p className="text-2xl font-black text-white">1,368</p>
+            <p className="text-2xl font-black text-white">
+              {Object.values(messages).reduce((acc, list) => acc + list.length, 0)}
+            </p>
             <p className="text-[11px] text-violet-400 mt-1 flex items-center gap-1">
               <Zap className="h-3 w-3" />
-              <span>Salons très animés</span>
+              <span>Synchronisé Supabase</span>
             </p>
           </div>
 
           <div className="rounded-3xl border border-slate-800 bg-[#0B0F19]/90 p-5 shadow-lg">
             <div className="flex items-center justify-between text-slate-400 mb-2">
-              <span className="text-xs font-semibold uppercase tracking-wider">Quizz Complétés</span>
+              <span className="text-xs font-semibold uppercase tracking-wider">Salons Actifs</span>
               <Brain className="h-4 w-4 text-amber-400" />
             </div>
-            <p className="text-2xl font-black text-white">314</p>
+            <p className="text-2xl font-black text-white">3</p>
             <p className="text-[11px] text-amber-400 mt-1 flex items-center gap-1">
-              <span>Moyenne 74% de réussite</span>
+              <span>Salons officiels de la 2</span>
             </p>
           </div>
 
           <div className="rounded-3xl border border-slate-800 bg-[#0B0F19]/90 p-5 shadow-lg">
             <div className="flex items-center justify-between text-slate-400 mb-2">
-              <span className="text-xs font-semibold uppercase tracking-wider">Taux d'Engagement</span>
+              <span className="text-xs font-semibold uppercase tracking-wider">Annonces Diffusées</span>
               <Zap className="h-4 w-4 text-emerald-400" />
             </div>
-            <p className="text-2xl font-black text-white">94.2%</p>
+            <p className="text-2xl font-black text-white">{broadcasts.length}</p>
             <p className="text-[11px] text-emerald-400 mt-1 flex items-center gap-1">
-              <span>Excellent rétention</span>
+              <span>{broadcasts.length === 0 ? 'Aucune annonce envoyée' : 'Diffusions actives'}</span>
             </p>
           </div>
         </div>

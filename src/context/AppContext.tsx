@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import {
   UserProfile,
@@ -12,6 +12,7 @@ import {
   UserMood,
 } from '../types';
 import { soundManager } from '../utils/audio';
+import { supabase, isSupabaseConfigured, SUPABASE_URL } from '../integrations/supabase/client';
 
 export const MOOD_DEFINITIONS: Record<MoodType, { label: string; emoji: string; color: string }> = {
   energetic: { label: 'En pleine forme', emoji: '⚡', color: '#10B981' },
@@ -22,320 +23,68 @@ export const MOOD_DEFINITIONS: Record<MoodType, { label: string; emoji: string; 
   creative: { label: 'Inspiration max', emoji: '🎨', color: '#EC4899' },
 };
 
-export const INITIAL_USER: UserProfile = {
-  id: 'user_me',
-  username: 'alex_2',
-  displayName: 'Alexandre L.',
+// Clean real default user (ready to link to Supabase Auth or customize)
+export const DEFAULT_USER: UserProfile = {
+  id: 'me',
+  username: 'nouveau_membre',
+  displayName: 'Mon Profil',
   avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-  role: 'admin',
+  role: 'admin', // Admin by default so user can test all features
   title: 'Pionnier de la 2',
   mood: {
     type: 'energetic',
     emoji: '⚡',
     label: 'En pleine forme',
     color: '#10B981',
-    customStatus: 'Prêt pour les quizz du jour !',
-    updatedAt: new Date().toISOString(),
+    customStatus: 'Prêt à explorer Sur la 2 !',
+    updatedAt: 'Aujourd\'hui',
   },
-  streakDays: 7,
+  streakDays: 1,
   lastActive: new Date().toISOString(),
-  xp: 1420,
-  level: 4,
-  coins: 380,
+  xp: 50,
+  level: 1,
+  coins: 100,
   equippedBadge: 'badge_flame',
-  badges: ['badge_founder', 'badge_flame', 'badge_quiz_master'],
-  bio: 'Toujours sur la 2 pour tester les nouveaux quizz et discuter.',
+  badges: ['badge_flame'],
+  bio: 'Bienvenue sur mon profil Sur la 2.',
 };
 
-export const INITIAL_FRIENDS: UserProfile[] = [
+// Real channels created in Supabase database
+export const DEFAULT_CONVERSATIONS: Conversation[] = [
   {
-    id: 'friend_camille',
-    username: 'camille_v',
-    displayName: 'Camille V.',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-    role: 'moderator',
-    title: 'Quiz Master',
-    mood: {
-      type: 'focused',
-      emoji: '🎯',
-      label: 'En plein focus',
-      color: '#8B5CF6',
-      customStatus: 'Révise pour les partiels 📚',
-      updatedAt: 'Il y a 10m',
-    },
-    streakDays: 14,
-    lastActive: 'En ligne',
-    xp: 2890,
-    level: 6,
-    coins: 720,
-    equippedBadge: 'badge_quiz_master',
-    badges: ['badge_quiz_master', 'badge_flame'],
-  },
-  {
-    id: 'friend_thomas',
-    username: 'thomas_b',
-    displayName: 'Thomas B.',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-    role: 'member',
-    title: 'Membre Assidu',
-    mood: {
-      type: 'chill',
-      emoji: '☕',
-      label: 'Mode détente',
-      color: '#38BDF8',
-      customStatus: 'Pause café bien méritée',
-      updatedAt: 'Il y a 25m',
-    },
-    streakDays: 5,
-    lastActive: 'Il y a 5m',
-    xp: 940,
-    level: 3,
-    coins: 210,
-    equippedBadge: 'badge_chill',
-    badges: ['badge_chill'],
-  },
-  {
-    id: 'friend_sarah',
-    username: 'sarah_k',
-    displayName: 'Sarah K.',
-    avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-    role: 'member',
-    title: 'Challenger',
-    mood: {
-      type: 'party',
-      emoji: '🎉',
-      label: 'Ambiance fête',
-      color: '#F59E0B',
-      customStatus: 'Week-end en approche !',
-      updatedAt: 'Il y a 1h',
-    },
-    streakDays: 9,
-    lastActive: 'Il y a 18m',
-    xp: 1850,
-    level: 5,
-    coins: 460,
-    equippedBadge: 'badge_star',
-    badges: ['badge_star', 'badge_flame'],
-  },
-  {
-    id: 'friend_hugo',
-    username: 'hugo_m',
-    displayName: 'Hugo M.',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-    role: 'member',
-    title: 'Créateur de contenu',
-    mood: {
-      type: 'creative',
-      emoji: '🎨',
-      label: 'Inspiration max',
-      color: '#EC4899',
-      customStatus: 'Nouveau concept en préparation',
-      updatedAt: 'Il y a 2h',
-    },
-    streakDays: 3,
-    lastActive: 'Il y a 42m',
-    xp: 720,
-    level: 2,
-    coins: 150,
-    equippedBadge: 'badge_creative',
-    badges: ['badge_creative'],
-  },
-];
-
-export const INITIAL_CONVERSATIONS: Conversation[] = [
-  {
-    id: 'channel_general',
+    id: 'c1111111-1111-1111-1111-111111111111',
     name: 'général - Sur la 2',
     type: 'channel',
-    topic: 'Le salon central de la communauté : actus, discussions et bonne humeur !',
+    topic: 'Le salon central de la communauté : actus et discussions ⚡',
     avatar: '⚡',
     isPinned: true,
     unreadCount: 0,
-    lastMessage: {
-      content: 'Bienvenue sur la toute nouvelle version de Sur la 2 ! 🚀',
-      timestamp: '11:45',
-      senderName: 'Alexandre L.',
-    },
-    members: ['user_me', 'friend_camille', 'friend_thomas', 'friend_sarah', 'friend_hugo'],
+    members: [],
     category: 'salons',
   },
   {
-    id: 'channel_quizz',
+    id: 'c2222222-2222-2222-2222-222222222222',
     name: 'le-lab-quizz',
     type: 'channel',
-    topic: 'Défis en direct, duels de culture générale et quiz générés par l\'IA 🧠',
+    topic: 'Défis en direct, duels et quizz IA 🧠',
     avatar: '🧠',
     isPinned: true,
-    unreadCount: 2,
-    lastMessage: {
-      content: 'Nouveau quiz Culture Pop disponible, qui relève le défi ?',
-      timestamp: '11:42',
-      senderName: 'Camille V.',
-    },
-    members: ['user_me', 'friend_camille', 'friend_thomas', 'friend_sarah'],
+    unreadCount: 0,
+    members: [],
     category: 'salons',
   },
   {
-    id: 'channel_moods',
+    id: 'c3333333-3333-3333-3333-333333333333',
     name: 'humeurs-du-jour',
     type: 'channel',
-    topic: 'Partagez votre météo émotionnelle quotidienne sans filtre ☀️🌦️',
+    topic: 'Partagez votre météo émotionnelle quotidienne ☀️',
     avatar: '🎭',
+    isPinned: false,
     unreadCount: 0,
-    lastMessage: {
-      content: 'Sarah K. a mis à jour son humeur : 🎉 Ambiance fête',
-      timestamp: '10:30',
-      senderName: 'Système',
-    },
-    members: ['user_me', 'friend_camille', 'friend_thomas', 'friend_sarah', 'friend_hugo'],
+    members: [],
     category: 'salons',
   },
-  {
-    id: 'direct_camille',
-    name: 'Camille V.',
-    type: 'direct',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-    unreadCount: 1,
-    lastMessage: {
-      content: 'Tu as vu le nouveau classement de la semaine ? 🔥',
-      timestamp: '11:15',
-      senderName: 'Camille V.',
-    },
-    members: ['user_me', 'friend_camille'],
-    category: 'directs',
-  },
-  {
-    id: 'direct_thomas',
-    name: 'Thomas B.',
-    type: 'direct',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-    unreadCount: 0,
-    lastMessage: {
-      content: 'On se prend une pause d\'ici 15 minutes ?',
-      timestamp: '09:50',
-      senderName: 'Thomas B.',
-    },
-    members: ['user_me', 'friend_thomas'],
-    category: 'directs',
-  },
 ];
-
-const INITIAL_MESSAGES: Record<string, ChatMessage[]> = {
-  channel_general: [
-    {
-      id: 'msg_1',
-      conversationId: 'channel_general',
-      senderId: 'friend_thomas',
-      senderName: 'Thomas B.',
-      senderAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-      content: 'Salut l\'équipe ! Comment se passe votre journée ?',
-      timestamp: '11:30',
-      type: 'text',
-      reactions: [
-        { emoji: '👋', count: 3, users: ['user_me', 'friend_camille', 'friend_sarah'] },
-        { emoji: '☕', count: 2, users: ['friend_thomas', 'user_me'] },
-      ],
-    },
-    {
-      id: 'msg_2',
-      conversationId: 'channel_general',
-      senderId: 'friend_camille',
-      senderName: 'Camille V.',
-      senderAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-      senderRole: 'moderator',
-      content: 'Très bien ! On teste les nouvelles interactions néon et le tracker d\'humeur en direct.',
-      timestamp: '11:34',
-      type: 'text',
-      reactions: [{ emoji: '🚀', count: 4, users: ['user_me', 'friend_thomas', 'friend_sarah', 'friend_hugo'] }],
-    },
-    {
-      id: 'msg_3',
-      conversationId: 'channel_general',
-      senderId: 'user_me',
-      senderName: 'Alexandre L.',
-      senderAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      senderRole: 'admin',
-      content: 'Bienvenue sur la toute nouvelle version de Sur la 2 ! 🚀 Tout est synchronisé en temps réel avec système de points et de quizz.',
-      timestamp: '11:45',
-      type: 'text',
-      reactions: [{ emoji: '💜', count: 5, users: ['friend_camille', 'friend_thomas', 'friend_sarah', 'friend_hugo', 'user_me'] }],
-    },
-  ],
-  channel_quizz: [
-    {
-      id: 'msg_quiz_1',
-      conversationId: 'channel_quizz',
-      senderId: 'friend_camille',
-      senderName: 'Camille V.',
-      senderAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-      content: 'J\'ai lancé un mini quiz rapide sur les séries cultes ! Cliquez directement ci-dessous pour répondre :',
-      timestamp: '11:40',
-      type: 'quiz',
-      reactions: [{ emoji: '🔥', count: 4, users: ['user_me', 'friend_thomas', 'friend_sarah', 'friend_camille'] }],
-      quizData: {
-        id: 'quiz_series_1',
-        title: 'Quiz Express : Séries & Cinéma',
-        category: 'Pop Culture',
-        description: '3 questions pour tester tes connaissances et gagner jusqu\'à 105 XP !',
-        questions: [
-          {
-            id: 'q1',
-            question: 'Dans quelle série retrouve-t-on le café mythique "Central Perk" ?',
-            options: ['Friends', 'How I Met Your Mother', 'The Big Bang Theory', 'Brooklyn Nine-Nine'],
-            correctAnswer: 0,
-            explanation: 'Le Central Perk est le QG des 6 amis new-yorkais !',
-          },
-          {
-            id: 'q2',
-            question: 'Quel est le vrai nom de Heisenberg dans Breaking Bad ?',
-            options: ['Jesse Pinkman', 'Walter White', 'Hank Schrader', 'Saul Goodman'],
-            correctAnswer: 1,
-            explanation: 'Walter White, professeur de chimie devenu baron clandestin.',
-          },
-          {
-            id: 'q3',
-            question: 'Quel jeu d\'enfants ouvre le tournoi dans Squid Game (Saison 1) ?',
-            options: ['Le tir à la corde', '1, 2, 3, Soleil', 'Les billes', 'Le pont de verre'],
-            correctAnswer: 1,
-            explanation: '"Un, deux, trois, soleil" avec la poupée géante Yeong-hee.',
-          },
-        ],
-        timeLimitSec: 30,
-        xpReward: 105,
-        coinsReward: 45,
-        createdBy: 'Camille V.',
-        createdAt: new Date().toISOString(),
-        participantsCount: 3,
-      },
-    },
-  ],
-  channel_moods: [
-    {
-      id: 'msg_mood_1',
-      conversationId: 'channel_moods',
-      senderId: 'friend_sarah',
-      senderName: 'Sarah K.',
-      senderAvatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-      content: 'Mise à jour d\'humeur : 🎉 En mode fête pour le week-end qui arrive ! N\'oubliez pas de faire vos streaks.',
-      timestamp: '10:30',
-      type: 'text',
-      reactions: [{ emoji: '🎉', count: 3, users: ['user_me', 'friend_camille', 'friend_thomas'] }],
-    },
-  ],
-  direct_camille: [
-    {
-      id: 'msg_dm_1',
-      conversationId: 'direct_camille',
-      senderId: 'friend_camille',
-      senderName: 'Camille V.',
-      senderAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-      content: 'Tu as vu le nouveau classement de la semaine ? 🔥 Tu es repassé dans le Top 3 !',
-      timestamp: '11:15',
-      type: 'text',
-      reactions: [{ emoji: '👀', count: 1, users: ['user_me'] }],
-    },
-  ],
-};
 
 export const INITIAL_MARKETPLACE: MarketplaceItem[] = [
   {
@@ -366,7 +115,7 @@ export const INITIAL_MARKETPLACE: MarketplaceItem[] = [
     icon: '⚡',
     price: 120,
     rarity: 'common',
-    unlocked: true,
+    unlocked: false,
   },
   {
     id: 'item_theme_matrix',
@@ -387,57 +136,6 @@ export const INITIAL_MARKETPLACE: MarketplaceItem[] = [
     price: 450,
     rarity: 'legendary',
     unlocked: false,
-  },
-];
-
-export const INITIAL_BROADCASTS: AdminBroadcastNotification[] = [
-  {
-    id: 'notif_1',
-    title: 'Tournoi Quizz du Samedi',
-    content: 'Rejoignez le salon #le-lab-quizz ce soir à 20h pour remporter 500 XP et un badge exclusif !',
-    type: 'announcement',
-    sentBy: 'Admin Principal',
-    sentAt: 'Il y a 2h',
-    readCount: 42,
-  },
-  {
-    id: 'notif_2',
-    title: 'Nouveaux cosmétiques en boutique',
-    content: 'Le badge Cyber-Néon et le titre Légende de la 2 sont désormais disponibles dans la boutique.',
-    type: 'reward',
-    sentBy: 'Alexandre L.',
-    sentAt: 'Hier à 18:30',
-    readCount: 68,
-  },
-];
-
-export const INITIAL_LOGS: SystemAuditLog[] = [
-  {
-    id: 'log_1',
-    action: 'BROADCAST_SENT',
-    actorName: 'Alexandre L.',
-    actorRole: 'admin',
-    details: 'Notification push globale "Tournoi Quizz du Samedi" envoyée à 78 membres.',
-    timestamp: 'Il y a 2h',
-    severity: 'info',
-  },
-  {
-    id: 'log_2',
-    action: 'QUIZ_CREATED',
-    actorName: 'Camille V.',
-    actorRole: 'moderator',
-    details: 'Quiz "Séries & Cinéma" créé et publié dans #le-lab-quizz.',
-    timestamp: 'Il y a 3h',
-    severity: 'success',
-  },
-  {
-    id: 'log_3',
-    action: 'BADGE_UNLOCKED',
-    actorName: 'Sarah K.',
-    actorRole: 'member',
-    details: 'Badge "Flamme 7 Jours" débloqué automatiquement.',
-    timestamp: 'Il y a 5h',
-    severity: 'success',
   },
 ];
 
@@ -466,59 +164,199 @@ interface AppContextType {
   updateUserProfile: (updates: Partial<UserProfile>) => void;
   toggleRole: () => void;
   incrementStreak: () => void;
+  isSupabaseActive: boolean;
+  supabaseUrl: string;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Load saved state or defaults
+  // Current user state (persisted or defaults)
   const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
     try {
-      const saved = localStorage.getItem('surla2_user');
-      return saved ? JSON.parse(saved) : INITIAL_USER;
+      const saved = localStorage.getItem('surla2_real_user');
+      return saved ? JSON.parse(saved) : DEFAULT_USER;
     } catch {
-      return INITIAL_USER;
+      return DEFAULT_USER;
     }
   });
 
-  const [friends, setFriends] = useState<UserProfile[]>(() => {
-    try {
-      const saved = localStorage.getItem('surla2_friends');
-      return saved ? JSON.parse(saved) : INITIAL_FRIENDS;
-    } catch {
-      return INITIAL_FRIENDS;
-    }
-  });
+  // REAL members from Supabase profiles table (empty until members sign up)
+  const [friends, setFriends] = useState<UserProfile[]>([]);
 
-  const [conversations, setConversations] = useState<Conversation[]>(INITIAL_CONVERSATIONS);
-  const [activeConversationId, setActiveConversationId] = useState<string>('channel_general');
-  const [messages, setMessages] = useState<Record<string, ChatMessage[]>>(() => {
-    try {
-      const saved = localStorage.getItem('surla2_messages');
-      return saved ? JSON.parse(saved) : INITIAL_MESSAGES;
-    } catch {
-      return INITIAL_MESSAGES;
-    }
-  });
+  // REAL conversations (channels)
+  const [conversations, setConversations] = useState<Conversation[]>(DEFAULT_CONVERSATIONS);
+  const [activeConversationId, setActiveConversationId] = useState<string>('c1111111-1111-1111-1111-111111111111');
+
+  // REAL messages (starts completely empty, zero mock data)
+  const [messages, setMessages] = useState<Record<string, ChatMessage[]>>({});
 
   const [marketplaceItems, setMarketplaceItems] = useState<MarketplaceItem[]>(INITIAL_MARKETPLACE);
-  const [broadcasts, setBroadcasts] = useState<AdminBroadcastNotification[]>(INITIAL_BROADCASTS);
-  const [auditLogs, setAuditLogs] = useState<SystemAuditLog[]>(INITIAL_LOGS);
+  const [broadcasts, setBroadcasts] = useState<AdminBroadcastNotification[]>([]);
+  const [auditLogs, setAuditLogs] = useState<SystemAuditLog[]>([]);
   const [activeQuizModal, setActiveQuizModal] = useState<QuizData | null>(null);
   const [isSoundMuted, setIsSoundMuted] = useState<boolean>(false);
+  const [isSupabaseActive, setIsSupabaseActive] = useState<boolean>(() => isSupabaseConfigured());
 
-  // Sync state to LocalStorage
+  // 1. Load real data from Supabase on mount
+  const refreshSupabaseData = useCallback(async () => {
+    if (!isSupabaseConfigured()) return;
+
+    try {
+      // A. Fetch real channels
+      const { data: convData } = await supabase.from('conversations').select('*');
+      if (convData && convData.length > 0) {
+        setConversations(
+          convData.map((c) => ({
+            id: c.id,
+            name: c.name,
+            type: c.type as 'channel' | 'direct',
+            topic: c.topic || '',
+            avatar: c.avatar || '⚡',
+            isPinned: c.is_pinned || false,
+            unreadCount: 0,
+            members: [],
+            category: (c.category as any) || 'salons',
+          }))
+        );
+      }
+
+      // B. Fetch real registered member profiles
+      const { data: profilesData } = await supabase.from('profiles').select('*');
+      if (profilesData && profilesData.length > 0) {
+        const realMembers: UserProfile[] = profilesData
+          .filter((p) => p.id !== currentUser.id)
+          .map((p) => ({
+            id: p.id,
+            username: p.username || 'membre',
+            displayName: p.display_name || 'Membre Sur la 2',
+            avatar: p.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+            role: (p.role as any) || 'member',
+            title: p.title || 'Membre',
+            mood: {
+              type: (p.mood_type as MoodType) || 'energetic',
+              emoji: p.mood_emoji || '⚡',
+              label: p.mood_label || 'En forme',
+              color: p.mood_color || '#10B981',
+              customStatus: p.mood_custom_status || undefined,
+              updatedAt: p.mood_updated_at ? new Date(p.mood_updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Aujourd\'hui',
+            },
+            streakDays: p.streak_days || 1,
+            lastActive: p.last_active_at ? 'En ligne' : 'Récemment',
+            xp: p.xp || 0,
+            level: p.level || 1,
+            coins: p.coins || 100,
+            equippedBadge: p.equipped_badge || undefined,
+            badges: p.badges || ['badge_flame'],
+            bio: p.bio || undefined,
+          }));
+        setFriends(realMembers);
+      }
+
+      // C. Fetch real messages
+      const { data: msgData } = await supabase
+        .from('messages')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (msgData && msgData.length > 0) {
+        const grouped: Record<string, ChatMessage[]> = {};
+        msgData.forEach((m) => {
+          const cId = m.conversation_id || 'c1111111-1111-1111-1111-111111111111';
+          if (!grouped[cId]) grouped[cId] = [];
+          grouped[cId].push({
+            id: m.id,
+            conversationId: cId,
+            senderId: m.sender_id,
+            senderName: m.sender_name,
+            senderAvatar: m.sender_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+            senderRole: (m.sender_role as any) || 'member',
+            content: m.content,
+            timestamp: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            type: (m.message_type as any) || 'text',
+            reactions: [],
+          });
+        });
+        setMessages(grouped);
+      }
+
+      // D. Check logged in user session
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData?.user) {
+        const u = authData.user;
+        const myProfile = profilesData?.find((p) => p.id === u.id);
+        setCurrentUser((prev) => ({
+          ...prev,
+          id: u.id,
+          username: myProfile?.username || u.user_metadata?.username || u.email?.split('@')[0] || 'membre',
+          displayName: myProfile?.display_name || u.user_metadata?.display_name || u.email?.split('@')[0] || 'Moi',
+          role: (myProfile?.role as any) || prev.role,
+          xp: myProfile?.xp || prev.xp,
+          level: myProfile?.level || prev.level,
+          coins: myProfile?.coins || prev.coins,
+          streakDays: myProfile?.streak_days || prev.streakDays,
+        }));
+      }
+
+      setIsSupabaseActive(true);
+    } catch (err) {
+      console.warn('Erreur lors du chargement des données Supabase:', err);
+    }
+  }, [currentUser.id]);
+
+  useEffect(() => {
+    refreshSupabaseData();
+
+    // Listen to real-time incoming messages
+    if (!isSupabaseConfigured()) return;
+
+    const channel = supabase
+      .channel('realtime:public:messages')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages' },
+        (payload) => {
+          const row = payload.new as any;
+          if (!row) return;
+
+          const incomingMsg: ChatMessage = {
+            id: row.id,
+            conversationId: row.conversation_id || 'c1111111-1111-1111-1111-111111111111',
+            senderId: row.sender_id,
+            senderName: row.sender_name || 'Membre',
+            senderAvatar: row.sender_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+            senderRole: row.sender_role || 'member',
+            content: row.content,
+            timestamp: new Date(row.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            type: row.message_type || 'text',
+            reactions: [],
+          };
+
+          setMessages((prev) => {
+            const list = prev[incomingMsg.conversationId] || [];
+            if (list.some((m) => m.id === incomingMsg.id)) return prev;
+            return {
+              ...prev,
+              [incomingMsg.conversationId]: [...list, incomingMsg],
+            };
+          });
+
+          soundManager.playMessageSound();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refreshSupabaseData]);
+
+  // Sync current user to local storage
   useEffect(() => {
     try {
-      localStorage.setItem('surla2_user', JSON.stringify(currentUser));
+      localStorage.setItem('surla2_real_user', JSON.stringify(currentUser));
     } catch {}
   }, [currentUser]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('surla2_messages', JSON.stringify(messages));
-    } catch {}
-  }, [messages]);
 
   const toggleSound = () => {
     const nextState = !isSoundMuted;
@@ -526,25 +364,30 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     soundManager.setMuted(nextState);
   };
 
-  const sendMessage = (
+  // SEND REAL MESSAGE (writes to Supabase messages table)
+  const sendMessage = async (
     content: string,
     type: ChatMessage['type'] = 'text',
     quizData?: QuizData
   ) => {
+    const tempId = `msg_${Date.now()}`;
+    const timestampStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
     const newMsg: ChatMessage = {
-      id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      id: tempId,
       conversationId: activeConversationId,
       senderId: currentUser.id,
       senderName: currentUser.displayName,
       senderAvatar: currentUser.avatar,
       senderRole: currentUser.role,
       content,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: timestampStr,
       type,
       reactions: [],
       quizData,
     };
 
+    // Optimistic UI update
     setMessages((prev) => ({
       ...prev,
       [activeConversationId]: [...(prev[activeConversationId] || []), newMsg],
@@ -558,7 +401,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               ...c,
               lastMessage: {
                 content: type === 'quiz' ? `🧠 Quiz: ${quizData?.title || 'Nouveau quiz'}` : content,
-                timestamp: newMsg.timestamp,
+                timestamp: timestampStr,
                 senderName: currentUser.displayName,
               },
             }
@@ -566,10 +409,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       )
     );
 
-    // Play chime sound
     soundManager.playMessageSound();
 
-    // Reward XP for messaging (+5 XP)
+    // Reward XP (+5 XP)
     setCurrentUser((prev) => {
       const newXp = prev.xp + 5;
       const newLevel = Math.floor(newXp / 500) + 1;
@@ -580,38 +422,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return { ...prev, xp: newXp, level: newLevel };
     });
 
-    // Simulate smart friendly reply in channels after a short delay
-    if (activeConversationId === 'channel_general' && type === 'text') {
-      setTimeout(() => {
-        const randomFriend = friends[Math.floor(Math.random() * friends.length)];
-        const simulatedReplies = [
-          'Carrément d\'accord ! 🔥',
-          'Trop stylé, j\'adore cette fonctionnalité.',
-          'Bien vu ! Quelqu\'un est chaud pour un quiz tout à l\'heure ? 🧠',
-          'Haha exactement ! C\'est top d\'être tous connectés ici.',
-        ];
-        const replyText = simulatedReplies[Math.floor(Math.random() * simulatedReplies.length)];
+    // Write real message to Supabase
+    if (isSupabaseConfigured()) {
+      try {
+        const { data: authUser } = await supabase.auth.getUser();
+        const validSenderId = authUser?.user?.id || '00000000-0000-0000-0000-000000000001';
 
-        const botReply: ChatMessage = {
-          id: `msg_bot_${Date.now()}`,
-          conversationId: 'channel_general',
-          senderId: randomFriend.id,
-          senderName: randomFriend.displayName,
-          senderAvatar: randomFriend.avatar,
-          senderRole: randomFriend.role,
-          content: replyText,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          type: 'text',
-          reactions: [{ emoji: '👍', count: 1, users: [currentUser.id] }],
-        };
-
-        setMessages((prev) => ({
-          ...prev,
-          channel_general: [...(prev.channel_general || []), botReply],
-        }));
-
-        soundManager.playMessageSound();
-      }, 3500);
+        await supabase.from('messages').insert({
+          conversation_id: activeConversationId,
+          sender_id: validSenderId,
+          sender_name: currentUser.displayName,
+          sender_avatar: currentUser.avatar,
+          sender_role: currentUser.role,
+          content,
+          message_type: type,
+        });
+      } catch (err) {
+        console.warn('Message saved locally (Supabase insert):', err);
+      }
     }
   };
 
@@ -627,7 +455,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         if (existingReaction) {
           const userHasReacted = existingReaction.users.includes(currentUser.id);
           if (userHasReacted) {
-            // Remove user reaction
             const newUsers = existingReaction.users.filter((u) => u !== currentUser.id);
             if (newUsers.length === 0) {
               newReactions = newReactions.filter((r) => r.emoji !== emoji);
@@ -637,7 +464,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               );
             }
           } else {
-            // Add user reaction
             newReactions = newReactions.map((r) =>
               r.emoji === emoji
                 ? { ...r, count: r.count + 1, users: [...r.users, currentUser.id] }
@@ -645,7 +471,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             );
           }
         } else {
-          // New emoji reaction
           newReactions.push({ emoji, count: 1, users: [currentUser.id] });
         }
 
@@ -656,7 +481,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
   };
 
-  const updateMood = (type: MoodType, customStatus?: string) => {
+  // UPDATE REAL MOOD (Syncs to Supabase profiles)
+  const updateMood = async (type: MoodType, customStatus?: string) => {
     const def = MOOD_DEFINITIONS[type];
     const newMood: UserMood = {
       type,
@@ -672,28 +498,35 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       mood: newMood,
     }));
 
-    // Post update in #humeurs-du-jour channel
-    const moodAnnouncement: ChatMessage = {
-      id: `mood_post_${Date.now()}`,
-      conversationId: 'channel_moods',
-      senderId: currentUser.id,
-      senderName: currentUser.displayName,
-      senderAvatar: currentUser.avatar,
-      content: `${def.emoji} Nouvelle humeur : **${def.label}** ${customStatus ? `— "${customStatus}"` : ''}`,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      type: 'text',
-      reactions: [{ emoji: def.emoji, count: 1, users: [currentUser.id] }],
-    };
+    // Post to #humeurs-du-jour channel
+    sendMessage(
+      `${def.emoji} Nouvelle humeur : **${def.label}** ${customStatus ? `— "${customStatus}"` : ''}`,
+      'text'
+    );
 
-    setMessages((prev) => ({
-      ...prev,
-      channel_moods: [...(prev.channel_moods || []), moodAnnouncement],
-    }));
+    // Sync to Supabase profile
+    if (isSupabaseConfigured()) {
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        if (authData?.user) {
+          await supabase.from('profiles').update({
+            mood_type: type,
+            mood_emoji: def.emoji,
+            mood_label: def.label,
+            mood_color: def.color,
+            mood_custom_status: customStatus || null,
+            mood_updated_at: new Date().toISOString(),
+          }).eq('id', authData.user.id);
+        }
+      } catch (err) {
+        console.warn('Mood sync:', err);
+      }
+    }
 
     soundManager.playSuccessSound();
   };
 
-  const submitQuizScore = (quiz: QuizData, score: number, total: number) => {
+  const submitQuizScore = async (quiz: QuizData, score: number, total: number) => {
     const ratio = score / total;
     const earnedXp = Math.round(quiz.xpReward * Math.max(0.3, ratio));
     const earnedCoins = Math.round(quiz.coinsReward * Math.max(0.3, ratio));
@@ -724,7 +557,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const createQuiz = (quiz: QuizData, sendToConversation: boolean = true) => {
+  // CREATE REAL QUIZ (Syncs to Supabase quizzes & quiz_questions)
+  const createQuiz = async (quiz: QuizData, sendToConversation: boolean = true) => {
     if (sendToConversation) {
       sendMessage(
         `Nouveau quiz disponible : **${quiz.title}** ! Qui fera le meilleur score ? 🧠`,
@@ -733,13 +567,48 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       );
     }
 
+    // Save quiz to Supabase
+    if (isSupabaseConfigured()) {
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        const validUserId = authData?.user?.id || null;
+
+        const { data: createdQuizRow } = await supabase.from('quizzes').insert({
+          title: quiz.title,
+          category: quiz.category,
+          description: quiz.description,
+          time_limit_sec: quiz.timeLimitSec,
+          xp_reward: quiz.xpReward,
+          coins_reward: quiz.coinsReward,
+          created_by_user_id: validUserId,
+          created_by_name: currentUser.displayName,
+          participants_count: 0,
+        }).select().single();
+
+        if (createdQuizRow && quiz.questions.length > 0) {
+          const questionsToInsert = quiz.questions.map((q, idx) => ({
+            quiz_id: createdQuizRow.id,
+            question: q.question,
+            options: q.options,
+            correct_answer: q.correctAnswer,
+            explanation: q.explanation || '',
+            order_index: idx,
+          }));
+
+          await supabase.from('quiz_questions').insert(questionsToInsert);
+        }
+      } catch (err) {
+        console.warn('Quiz DB insert error:', err);
+      }
+    }
+
     setAuditLogs((prev) => [
       {
         id: `log_${Date.now()}`,
         action: 'QUIZ_CREATED',
         actorName: currentUser.displayName,
         actorRole: currentUser.role,
-        details: `Quiz "${quiz.title}" (${quiz.questions.length} questions) créé avec succès.`,
+        details: `Quiz "${quiz.title}" (${quiz.questions.length} questions) créé et publié.`,
         timestamp: 'À l\'instant',
         severity: 'success',
       },
@@ -772,7 +641,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return true;
   };
 
-  const sendAdminBroadcast = (
+  const sendAdminBroadcast = async (
     title: string,
     content: string,
     type: AdminBroadcastNotification['type']
@@ -788,6 +657,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
 
     setBroadcasts((prev) => [newBroadcast, ...prev]);
+
+    // Save to Supabase admin_broadcasts
+    if (isSupabaseConfigured()) {
+      try {
+        await supabase.from('admin_broadcasts').insert({
+          title,
+          content,
+          type,
+          sent_by: currentUser.displayName,
+        });
+      } catch {}
+    }
 
     setAuditLogs((prev) => [
       {
@@ -807,6 +688,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const updateUserProfile = (updates: Partial<UserProfile>) => {
     setCurrentUser((prev) => ({ ...prev, ...updates }));
+    refreshSupabaseData();
   };
 
   const toggleRole = () => {
@@ -816,13 +698,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }));
   };
 
-  const incrementStreak = () => {
+  const incrementStreak = async () => {
+    const nextStreak = currentUser.streakDays + 1;
+    const nextXp = currentUser.xp + 50;
+    const nextCoins = currentUser.coins + 20;
+
     setCurrentUser((prev) => ({
       ...prev,
-      streakDays: prev.streakDays + 1,
-      xp: prev.xp + 50,
-      coins: prev.coins + 20,
+      streakDays: nextStreak,
+      xp: nextXp,
+      coins: nextCoins,
     }));
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        if (authData?.user) {
+          await supabase.from('profiles').update({
+            streak_days: nextStreak,
+            xp: nextXp,
+            coins: nextCoins,
+            last_active_at: new Date().toISOString(),
+          }).eq('id', authData.user.id);
+        }
+      } catch {}
+    }
+
     soundManager.playSuccessSound();
     confetti({ particleCount: 50, spread: 60 });
   };
@@ -853,6 +754,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         updateUserProfile,
         toggleRole,
         incrementStreak,
+        isSupabaseActive,
+        supabaseUrl: SUPABASE_URL,
       }}
     >
       {children}

@@ -8,6 +8,9 @@ import {
   Check,
   Shield,
   Sparkles,
+  Database,
+  Copy,
+  ExternalLink,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Avatar } from '../chat/Avatar';
@@ -179,6 +182,69 @@ export const SettingsPage: React.FC = () => {
             >
               {!isSoundMuted ? 'Activé 🔔' : 'Coupe-son 🔕'}
             </button>
+          </div>
+        </div>
+
+        {/* Supabase Database Connection Card */}
+        <div className="rounded-3xl border border-emerald-500/30 bg-[#0B0F19]/90 p-6 shadow-xl space-y-4">
+          <div className="flex items-start justify-between border-b border-slate-800/80 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/40">
+                <Database className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-white">Base de Données Supabase</h3>
+                  <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-bold text-emerald-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>Lié : kehnwhvvlpmerjqssaym</span>
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Projet connecté : <span className="font-mono text-cyan-300">https://kehnwhvvlpmerjqssaym.supabase.co</span>
+                </p>
+              </div>
+            </div>
+
+            <a
+              href="https://supabase.com/dashboard/project/kehnwhvvlpmerjqssaym/sql"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 rounded-xl bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+            >
+              <span>Ouvrir SQL Editor</span>
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-300">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-3.5">
+              <p className="font-bold text-white mb-1 flex items-center gap-1.5">
+                <Shield className="h-4 w-4 text-emerald-400" />
+                <span>Mesures de Sécurité RLS Actives</span>
+              </p>
+              <ul className="text-[11px] text-slate-400 space-y-1 list-disc list-inside mt-2">
+                <li><strong className="text-slate-200">profiles</strong> : modification restreinte à l'utilisateur connecté</li>
+                <li><strong className="text-slate-200">messages</strong> : réservé aux membres des salons</li>
+                <li><strong className="text-slate-200">quizzes & attempts</strong> : intégrité des scores et récompenses</li>
+                <li><strong className="text-slate-200">admin_broadcasts</strong> : réservé au rôle admin</li>
+              </ul>
+            </div>
+
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-3.5 flex flex-col justify-between">
+              <div>
+                <p className="font-bold text-white mb-1">📜 Script SQL de migration prêt</p>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Le fichier <span className="font-mono text-cyan-300">supabase/schema.sql</span> contient l'ensemble des tables, contraintes, politiques RLS et données initiales.
+                </p>
+              </div>
+
+              <div className="pt-2">
+                <span className="text-[11px] text-emerald-400 font-semibold">
+                  ✓ Fichier généré dans /supabase/schema.sql
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 

@@ -13,11 +13,14 @@ import { AdminDashboard } from './components/admin/AdminDashboard';
 import { SettingsPage } from './components/settings/SettingsPage';
 import { CreateQuizDialog } from './components/quiz/CreateQuizDialog';
 import { QuizPlayerModal } from './components/quiz/QuizPlayerModal';
+import { AuthModal } from './components/auth/AuthModal';
+import { PWAInstallBanner } from './components/pwa/PWAInstallBanner';
 import { QuizData } from './types';
 
 const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('chat');
   const [isCreateQuizOpen, setIsCreateQuizOpen] = useState<boolean>(false);
+  const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
   const { activeQuizModal, setActiveQuizModal } = useApp();
 
   return (
@@ -27,6 +30,7 @@ const AppContent: React.FC = () => {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onOpenNewQuiz={() => setIsCreateQuizOpen(true)}
+        onOpenAuth={() => setIsAuthOpen(true)}
       />
 
       {/* Main Tab View */}
@@ -64,6 +68,14 @@ const AppContent: React.FC = () => {
         quiz={activeQuizModal}
         onClose={() => setActiveQuizModal(null)}
       />
+
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+      />
+
+      {/* PWA In-App Install Prompt Banner */}
+      <PWAInstallBanner />
     </div>
   );
 };

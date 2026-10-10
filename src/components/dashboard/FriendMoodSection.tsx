@@ -154,6 +154,17 @@ export const FriendMoodSection: React.FC = () => {
             </div>
           ))}
         </div>
+
+        {friends.length === 0 && (
+          <div className="rounded-2xl border border-slate-800/80 bg-slate-900/40 p-6 text-center text-xs text-slate-400">
+            <p className="font-semibold text-slate-300 mb-1">
+              Votre météo est active !
+            </p>
+            <p className="text-slate-500">
+              Dès que d'autres membres rejoindront Sur la 2, leurs humeurs apparaîtront ici en direct.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

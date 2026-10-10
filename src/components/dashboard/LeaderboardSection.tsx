@@ -103,48 +103,59 @@ export const LeaderboardSection: React.FC = () => {
       </div>
 
       {/* Ranking List */}
-      <div className="space-y-1.5">
-        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-          Autres participants
-        </h4>
+      {theRest.length > 0 ? (
+        <div className="space-y-1.5">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+            Autres participants
+          </h4>
 
-        {theRest.map((user, idx) => {
-          const isMe = user.id === currentUser.id;
-          return (
-            <div
-              key={user.id}
-              className={`flex items-center justify-between rounded-xl p-2.5 transition-colors ${
-                isMe
-                  ? 'border border-violet-500/30 bg-violet-600/10'
-                  : 'bg-slate-900/60 border border-slate-800/60'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <span className="w-5 text-center text-xs font-bold text-slate-500">
-                  #{idx + 4}
-                </span>
+          {theRest.map((user, idx) => {
+            const isMe = user.id === currentUser.id;
+            return (
+              <div
+                key={user.id}
+                className={`flex items-center justify-between rounded-xl p-2.5 transition-colors ${
+                  isMe
+                    ? 'border border-violet-500/30 bg-violet-600/10'
+                    : 'bg-slate-900/60 border border-slate-800/60'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="w-5 text-center text-xs font-bold text-slate-500">
+                    #{idx + 4}
+                  </span>
 
-                <Avatar src={user.avatar} name={user.displayName} size="sm" />
+                  <Avatar src={user.avatar} name={user.displayName} size="sm" />
 
-                <div>
-                  <p className="text-xs font-semibold text-white">
-                    {user.displayName}
-                    {isMe && <span className="text-violet-400 ml-1">(Moi)</span>}
-                  </p>
-                  <p className="text-[10px] text-slate-400">
-                    Niv. {user.level} · {user.streakDays}j flammes 🔥
-                  </p>
+                  <div>
+                    <p className="text-xs font-semibold text-white">
+                      {user.displayName}
+                      {isMe && <span className="text-violet-400 ml-1">(Moi)</span>}
+                    </p>
+                    <p className="text-[10px] text-slate-400">
+                      Niv. {user.level} · {user.streakDays}j flammes 🔥
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1 text-xs font-bold text-cyan-400">
+                  <Zap className="h-3.5 w-3.5" />
+                  <span>{user.xp} XP</span>
                 </div>
               </div>
-
-              <div className="flex items-center gap-1 text-xs font-bold text-cyan-400">
-                <Zap className="h-3.5 w-3.5" />
-                <span>{user.xp} XP</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-slate-800/60 bg-slate-900/40 p-4 text-center text-xs text-slate-400">
+          <p className="font-semibold text-slate-300">
+            {allParticipants.length === 1 ? '👑 Vous êtes seul en tête du classement !' : 'Podium complet.'}
+          </p>
+          <p className="text-[11px] text-slate-500 mt-0.5">
+            Participez aux quizz et discutez dans les salons pour accumuler de l'XP.
+          </p>
+        </div>
+      )}
     </div>
   );
 };
