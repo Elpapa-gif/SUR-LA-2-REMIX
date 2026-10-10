@@ -34,7 +34,7 @@ const AppContent: React.FC = () => {
       />
 
       {/* Main Tab View */}
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-hidden pb-14 md:pb-0">
         {activeTab === 'chat' && (
           <ChatPage
             onOpenNewQuiz={() => setIsCreateQuizOpen(true)}

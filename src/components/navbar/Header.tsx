@@ -33,7 +33,8 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onOpenN
   } = useApp();
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-[#0B0F19]/90 backdrop-blur-md">
+    <>
+      <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-[#0B0F19]/90 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
         {/* Brand / Logo */}
         <div className="flex items-center gap-6">
@@ -209,46 +210,56 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onOpenN
           </button>
         </div>
       </div>
-
-      {/* Mobile navigation bar */}
-      <div className="flex border-t border-slate-800/80 bg-[#0B0F19] px-2 py-1.5 md:hidden justify-around">
-        <button
-          onClick={() => setActiveTab('chat')}
-          className={`flex flex-col items-center gap-0.5 px-3 py-1 text-[10px] font-medium ${
-            activeTab === 'chat' ? 'text-violet-400' : 'text-slate-400'
-          }`}
-        >
-          <MessageSquare className="h-4 w-4" />
-          <span>Chat</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('dashboard')}
-          className={`flex flex-col items-center gap-0.5 px-3 py-1 text-[10px] font-medium ${
-            activeTab === 'dashboard' ? 'text-cyan-400' : 'text-slate-400'
-          }`}
-        >
-          <LayoutDashboard className="h-4 w-4" />
-          <span>Tableau</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('quizzes')}
-          className={`flex flex-col items-center gap-0.5 px-3 py-1 text-[10px] font-medium ${
-            activeTab === 'quizzes' ? 'text-amber-400' : 'text-slate-400'
-          }`}
-        >
-          <Brain className="h-4 w-4" />
-          <span>Quizz</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('admin')}
-          className={`flex flex-col items-center gap-0.5 px-3 py-1 text-[10px] font-medium ${
-            activeTab === 'admin' ? 'text-rose-400' : 'text-slate-400'
-          }`}
-        >
-          <ShieldAlert className="h-4 w-4" />
-          <span>Admin</span>
-        </button>
-      </div>
     </header>
+
+    {/* Fixed Bottom Mobile Navigation Bar (Native mobile app style) */}
+    <nav className="fixed bottom-0 left-0 right-0 z-40 flex border-t border-slate-800/80 bg-[#0B0F19]/95 px-2 py-1.5 md:hidden justify-around backdrop-blur-md shadow-2xl">
+      <button
+        onClick={() => setActiveTab('chat')}
+        className={`flex flex-col items-center gap-0.5 px-3 py-1 text-[10px] font-medium transition-colors ${
+          activeTab === 'chat' ? 'text-violet-400 font-bold' : 'text-slate-400'
+        }`}
+      >
+        <MessageSquare className="h-4 w-4" />
+        <span>Chat</span>
+      </button>
+      <button
+        onClick={() => setActiveTab('dashboard')}
+        className={`flex flex-col items-center gap-0.5 px-3 py-1 text-[10px] font-medium transition-colors ${
+          activeTab === 'dashboard' ? 'text-cyan-400 font-bold' : 'text-slate-400'
+        }`}
+      >
+        <LayoutDashboard className="h-4 w-4" />
+        <span>Tableau</span>
+      </button>
+      <button
+        onClick={() => setActiveTab('quizzes')}
+        className={`flex flex-col items-center gap-0.5 px-3 py-1 text-[10px] font-medium transition-colors ${
+          activeTab === 'quizzes' ? 'text-amber-400 font-bold' : 'text-slate-400'
+        }`}
+      >
+        <Brain className="h-4 w-4" />
+        <span>Quizz</span>
+      </button>
+      <button
+        onClick={() => setActiveTab('admin')}
+        className={`flex flex-col items-center gap-0.5 px-3 py-1 text-[10px] font-medium transition-colors ${
+          activeTab === 'admin' ? 'text-rose-400 font-bold' : 'text-slate-400'
+        }`}
+      >
+        <ShieldAlert className="h-4 w-4" />
+        <span>Admin</span>
+      </button>
+      <button
+        onClick={() => setActiveTab('settings')}
+        className={`flex flex-col items-center gap-0.5 px-3 py-1 text-[10px] font-medium transition-colors ${
+          activeTab === 'settings' ? 'text-emerald-400 font-bold' : 'text-slate-400'
+        }`}
+      >
+        <Settings className="h-4 w-4" />
+        <span>Profil</span>
+      </button>
+    </nav>
+  </>
   );
 };

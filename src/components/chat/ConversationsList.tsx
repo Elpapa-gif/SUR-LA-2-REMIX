@@ -14,11 +14,15 @@ import { Avatar } from './Avatar';
 interface ConversationsListProps {
   onSelectConversation: (id: string) => void;
   activeId: string;
+  className?: string;
+  onOpenChatOnMobile?: () => void;
 }
 
 export const ConversationsList: React.FC<ConversationsListProps> = ({
   onSelectConversation,
   activeId,
+  className,
+  onOpenChatOnMobile,
 }) => {
   const { conversations, friends } = useApp();
   const [search, setSearch] = useState<string>('');
@@ -33,7 +37,7 @@ export const ConversationsList: React.FC<ConversationsListProps> = ({
   });
 
   return (
-    <aside className="flex h-full w-full flex-col border-r border-slate-800/80 bg-[#0B0F19]/60 backdrop-blur-sm sm:w-72 lg:w-80">
+    <aside className={`flex h-full flex-col border-r border-slate-800/80 bg-[#0B0F19]/60 backdrop-blur-sm ${className || 'w-full md:w-72 lg:w-80'}`}>
       {/* Header & Search */}
       <div className="p-3.5 border-b border-slate-800/70">
         <div className="flex items-center justify-between mb-3">
@@ -43,6 +47,15 @@ export const ConversationsList: React.FC<ConversationsListProps> = ({
               ({conversations.length})
             </span>
           </h2>
+
+          {onOpenChatOnMobile && (
+            <button
+              onClick={onOpenChatOnMobile}
+              className="text-xs font-semibold text-violet-400 hover:text-violet-300 md:hidden transition-colors"
+            >
+              Vers le chat →
+            </button>
+          )}
         </div>
 
         {/* Search input */}
